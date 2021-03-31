@@ -39,6 +39,7 @@ class system {
 public:
     system(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path);
     void publish_pose();
+    void setParams();
     openvslam::system SLAM_;
     std::shared_ptr<openvslam::config> cfg_;
     std::shared_ptr<rclcpp::Node> node_;
@@ -47,9 +48,12 @@ public:
     cv::Mat mask_;
     std::vector<double> track_times_;
     std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> pose_pub_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> odom_to_map_broadcaster_;
-    std::string odom_frame_;
-    std::string camera_frame_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> map_to_odom_broadcaster_;
+    std::string odom_frame_, map_frame_, camera_frame_;
+    std::unique_ptr<tf2_ros::Buffer> tf_;
+    std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
+    tf2::Transform map_to_odom_;
+    bool publish_tf_;
 };
 
 class mono : public system {
