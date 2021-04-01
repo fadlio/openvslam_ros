@@ -12,8 +12,7 @@ system::system(const std::shared_ptr<openvslam::config>& cfg, const std::string&
     : SLAM_(cfg, vocab_file_path), cfg_(cfg), node_(std::make_shared<rclcpp::Node>("run_slam")), custom_qos_(rmw_qos_profile_default),
       mask_(mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
       pose_pub_(node_->create_publisher<nav_msgs::msg::Odometry>("~/camera_pose", 1)),
-      map_to_odom_broadcaster_(std::make_shared<tf2_ros::TransformBroadcaster>(node_)),
-      publish_tf_(false) {
+      map_to_odom_broadcaster_(std::make_shared<tf2_ros::TransformBroadcaster>(node_)){
     custom_qos_.depth = 1;
     exec_.add_node(node_);
 }
@@ -38,7 +37,7 @@ void system::publish_pose() {
     nav_msgs::msg::Odometry pose_msg;
     pose_msg.header.stamp = node_->now();
     pose_msg.header.frame_id = map_frame_;
-    pose_msg.child_frame_id = camera_frame_;
+    pose_msg.child_frame_id = camera_link_;
     pose_msg.pose.pose.orientation.x = quat.x();
     pose_msg.pose.pose.orientation.y = quat.y();
     pose_msg.pose.pose.orientation.z = quat.z();
@@ -52,7 +51,7 @@ void system::publish_pose() {
 
         tf2::Stamped<tf2::Transform> camera_to_map(tf2::Transform(tf2::Quaternion(quat.x(), quat.y(), quat.z(), quat.w()), 
                                                     tf2::Vector3(trans(0), trans(1), trans(2))).inverse(),
-                                                    tf2_ros::fromMsg(node_->now()), camera_frame_);
+                                                    tf2_ros::fromMsg(node_->now()), camera_link_);
 
         geometry_msgs::msg::TransformStamped camera_to_map_msg, odom_to_map_msg, map_to_odom_msg;
         tf2::Stamped<tf2::Transform> odom_to_map_stamped, map_to_odom_stamped;
@@ -86,10 +85,17 @@ void system::publish_pose() {
 
 void system::setParams(){
     map_to_odom_.setIdentity();
-
     odom_frame_ = std::string("odom");
+    odom_frame_ = node_->declare_parameter("odom_frame", odom_frame_);
+
     map_frame_ = std::string("map");
-    camera_frame_ = std::string("camera_frame");
+    map_frame_ = node_->declare_parameter("map_frame", map_frame_);
+
+    camera_link_ = std::string("camera_link");
+    camera_link_ = node_->declare_parameter("camera_link", camera_link_);
+
+    publish_tf_ = false;
+    publish_tf_ = node_->declare_parameter("publish_tf_bool", publish_tf_);
 }
 
 mono::mono(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path)

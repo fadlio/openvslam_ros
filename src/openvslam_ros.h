@@ -14,22 +14,14 @@
 #include <message_filters/time_synchronizer.h>
 #include <cv_bridge/cv_bridge.h>
 #include <nav_msgs/msg/odometry.hpp>
+
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2/transform_datatypes.h>
-
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/create_timer_ros.h"
-#include "tf2_ros/message_filter.h"
-#include "tf2/LinearMath/Matrix3x3.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "tf2_sensor_msgs/tf2_sensor_msgs.h"
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <geometry_msgs/msg/transform_stamped.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/transform_datatypes.h>
-
 
 #include <opencv2/core/core.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -49,7 +41,7 @@ public:
     std::vector<double> track_times_;
     std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> pose_pub_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> map_to_odom_broadcaster_;
-    std::string odom_frame_, map_frame_, camera_frame_;
+    std::string odom_frame_, map_frame_, camera_link_;
     std::unique_ptr<tf2_ros::Buffer> tf_;
     std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
     tf2::Transform map_to_odom_;
