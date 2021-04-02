@@ -90,8 +90,6 @@ void system::setParams(){
     map_frame_ = std::string("map");
     map_frame_ = node_->declare_parameter("map_frame", map_frame_);
 
-    camera_link_ = std::string("camera_link");
-
     publish_tf_ = true;
     publish_tf_ = node_->declare_parameter("publish_tf_bool", publish_tf_);
 }
@@ -102,6 +100,7 @@ mono::mono(const std::shared_ptr<openvslam::config>& cfg, const std::string& voc
         node_.get(), "camera/image_raw", [this](const sensor_msgs::msg::Image::ConstSharedPtr& msg) { callback(msg); }, "raw", custom_qos_);
 }
 void mono::callback(const sensor_msgs::msg::Image::ConstSharedPtr& msg) {
+    camera_link_ = msg->header.frame_id;
     const rclcpp::Time tp_1 = node_->now();
     const double timestamp = tp_1.seconds();
 
@@ -126,6 +125,7 @@ stereo::stereo(const std::shared_ptr<openvslam::config>& cfg, const std::string&
 }
 
 void stereo::callback(const sensor_msgs::msg::Image::ConstSharedPtr& left, const sensor_msgs::msg::Image::ConstSharedPtr& right) {
+    camera_link_ = left->header.frame_id;
     auto leftcv = cv_bridge::toCvShare(left)->image;
     auto rightcv = cv_bridge::toCvShare(right)->image;
     if (leftcv.empty() || rightcv.empty()) {
@@ -158,6 +158,7 @@ rgbd::rgbd(const std::shared_ptr<openvslam::config>& cfg, const std::string& voc
 }
 
 void rgbd::callback(const sensor_msgs::msg::Image::ConstSharedPtr& color, const sensor_msgs::msg::Image::ConstSharedPtr& depth) {
+    camera_link_ = color->header.frame_id;
     auto colorcv = cv_bridge::toCvShare(color)->image;
     auto depthcv = cv_bridge::toCvShare(depth)->image;
     if (colorcv.empty() || depthcv.empty()) {
