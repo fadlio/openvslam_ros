@@ -12,7 +12,9 @@ system::system(const std::shared_ptr<openvslam::config>& cfg, const std::string&
     : SLAM_(cfg, vocab_file_path), cfg_(cfg), node_(std::make_shared<rclcpp::Node>("run_slam")), custom_qos_(rmw_qos_profile_default),
       mask_(mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
       pose_pub_(node_->create_publisher<nav_msgs::msg::Odometry>("~/camera_pose", 1)),
-      map_to_odom_broadcaster_(std::make_shared<tf2_ros::TransformBroadcaster>(node_)){
+      map_to_odom_broadcaster_(std::make_shared<tf2_ros::TransformBroadcaster>(node_)),
+      tf_(std::make_unique<tf2_ros::Buffer>(node_->get_clock())),
+      transform_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_)){
     custom_qos_.depth = 1;
     exec_.add_node(node_);
 }
@@ -64,9 +66,6 @@ void system::publish_pose() {
         camera_to_map_msg.transform.translation.z = camera_to_map.getOrigin().getZ();
         camera_to_map_msg.transform.rotation = tf2::toMsg(camera_to_map.getRotation());
         
-        tf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
-        transform_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_);
-        
         try {
             odom_to_map_msg = tf_->transform(camera_to_map_msg, odom_frame_);
             tf2::fromMsg(odom_to_map_msg, odom_to_map_stamped);
@@ -78,7 +77,7 @@ void system::publish_pose() {
 
         }
         catch (tf2::TransformException & ex) {
-            RCLCPP_ERROR(node_->get_logger(), "StaticLayer: %s", ex.what());
+            RCLCPP_ERROR(node_->get_logger(), "Transform failed: %s", ex.what());
         }
     }
 }
@@ -92,9 +91,8 @@ void system::setParams(){
     map_frame_ = node_->declare_parameter("map_frame", map_frame_);
 
     camera_link_ = std::string("camera_link");
-    camera_link_ = node_->declare_parameter("camera_link", camera_link_);
 
-    publish_tf_ = false;
+    publish_tf_ = true;
     publish_tf_ = node_->declare_parameter("publish_tf_bool", publish_tf_);
 }
 
